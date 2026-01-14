@@ -4,7 +4,8 @@ const cookieParser = require("cookie-parser");
 
 
 const authRoutes = require("./routes/auth.routes");
-
+const moviesRoutes = require("./routes/movies.routes");
+const usersRoutes = require("./routes/users.routes");
 
 const app = express();
 
@@ -29,6 +30,11 @@ app.get("/health", (req, res) => {
 
 // auth routes
 app.use("/auth", authRoutes);
+
+
+// guest routes
+app.use("/movies", moviesRoutes);
+app.use("/users", usersRoutes);
 
 
 module.exports = app;
