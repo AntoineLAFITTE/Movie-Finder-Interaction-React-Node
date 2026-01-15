@@ -6,6 +6,7 @@ const authRoutes = require("./routes/auth.routes");
 const moviesRoutes = require("./routes/movies.routes");
 const usersRoutes = require("./routes/users.routes");
 const meRoutes = require("./routes/me.routes");
+const favoritesRoutes = require("./routes/favorites.routes");
 
 const app = express();
 
@@ -29,5 +30,6 @@ app.use("/auth", authRoutes);
 app.use("/movies", moviesRoutes);
 app.use("/users", usersRoutes);
 app.use("/me", meRoutes);
+app.use("/favorites", favoritesRoutes);
 
 module.exports = app;

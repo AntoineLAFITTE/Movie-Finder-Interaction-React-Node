@@ -1,5 +1,6 @@
 const User = require("../models/User.model");
 const Movie = require("../models/Movie.model");
+const Favorite = require("../models/Favorite.model");
 
 // GET /me
 async function getMe(req, res) {
@@ -19,4 +20,22 @@ async function getMyMovies(req, res) {
   res.json({ items: movies });
 }
 
-module.exports = { getMe, getMyMovies };
+// GET /me/favorites
+async function getMyFavorites(req, res) {
+  const favorites = await Favorite.find({ user: req.user.userId })
+    .populate({
+      path: "movie",
+      populate: { path: "owner", select: "username" },
+    })
+    .sort({ createdAt: -1 });
+
+  // Renvoie juste les movies
+  const items = favorites
+    .map((f) => f.movie)
+    .filter(Boolean);
+
+  res.json({ items });
+}
+
+
+module.exports = { getMe, getMyMovies, getMyFavorites };
