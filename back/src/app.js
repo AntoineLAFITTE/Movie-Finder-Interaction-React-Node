@@ -7,6 +7,8 @@ const moviesRoutes = require("./routes/movies.routes");
 const usersRoutes = require("./routes/users.routes");
 const meRoutes = require("./routes/me.routes");
 const favoritesRoutes = require("./routes/favorites.routes");
+const omdbRoutes = require("./routes/omdb.routes");
+
 
 const app = express();
 
@@ -31,5 +33,7 @@ app.use("/movies", moviesRoutes);
 app.use("/users", usersRoutes);
 app.use("/me", meRoutes);
 app.use("/favorites", favoritesRoutes);
+app.use("/omdb", omdbRoutes);
+
 
 module.exports = app;
