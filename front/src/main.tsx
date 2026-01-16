@@ -4,16 +4,19 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import { FavoritesProvider } from './context/FavoritesContext'
 import { ThemeProvider } from './context/ThemeContext'
+import { AuthProvider } from './context/AuthContext'
 import '../styles.css'
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
-      <FavoritesProvider>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
-      </FavoritesProvider>
+      <AuthProvider>
+        <FavoritesProvider>
+          <BrowserRouter>
+            <App />
+          </BrowserRouter>
+        </FavoritesProvider>
+      </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>
 )
