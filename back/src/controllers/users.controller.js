@@ -1,7 +1,18 @@
 const User = require("../models/User.model");
 const Movie = require("../models/Movie.model");
+const Top3 = require("../models/Top3.model");
 
-// GET /users/:username  => profil public + movies publics du user
+// GET /users  => liste publique des users (username + _id)
+async function listUsers(req, res) {
+  const items = await User.find({})
+    .sort({ createdAt: -1 })
+    .select("_id username createdAt")
+    .limit(200);
+
+  res.json({ items });
+}
+
+// GET /users/:username  => profil public + movies publics + top3 publics
 async function getPublicProfile(req, res) {
   const { username } = req.params;
 
@@ -12,10 +23,15 @@ async function getPublicProfile(req, res) {
     .sort({ createdAt: -1 })
     .select("title year poster createdAt");
 
+  const top3 = await Top3.find({ owner: user._id, visibility: "public" })
+    .sort({ createdAt: -1 })
+    .select("title movies visibility createdAt");
+
   res.json({
     user,
     movies,
+    top3,
   });
 }
 
-module.exports = { getPublicProfile };
+module.exports = { listUsers, getPublicProfile };
