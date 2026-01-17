@@ -1,60 +1,80 @@
-import { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react'
-import type { ReactNode } from 'react'
+import { createContext, useContext, useEffect, useMemo, useCallback, useState } from "react";
+import type { ReactNode } from "react";
+import { http } from "../services/http";
+import { useAuth } from "./AuthContext";
 
-export type Movie = {
-  imdbID: string
-  Title: string
-  Year: string
-  Poster: string
-}
+// Movie venant de ta DB (back)
+export type DbMovie = {
+  _id: string;
+  title: string;
+  year?: string;
+  poster?: string;
+  description?: string;
+  owner?: { _id: string; username: string } | string;
+  visibility?: string;
+  createdAt?: string;
+};
 
 type FavoritesContextType = {
-  favorites: Movie[]
-  toggleFavorite: (movie: Movie) => void
-  isFavorite: (id: string) => boolean
-}
+  favorites: DbMovie[];
+  refreshFavorites: () => Promise<void>;
+  toggleFavorite: (movieId: string) => Promise<void>;
+  isFavorite: (movieId: string) => boolean;
+};
 
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined)
+const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
-  const [favorites, setFavorites] = useState<Movie[]>([])
+  const { user, isLoading } = useAuth();
+  const [favorites, setFavorites] = useState<DbMovie[]>([]);
 
+  const refreshFavorites = useCallback(async () => {
+    if (!user) {
+      setFavorites([]);
+      return;
+    }
+    const data = await http.get<{ items: DbMovie[] }>("/api/me/favorites");
+    setFavorites(data.items || []);
+  }, [user]);
 
+  // Recharge les favoris quand on se connecte / déconnecte
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem('mfavorites')
-      if (raw) setFavorites(JSON.parse(raw))
-    } catch {}
-  }, [])
+    if (isLoading) return;
+    refreshFavorites();
+  }, [isLoading, user, refreshFavorites]);
 
-  useEffect(() => {
-    localStorage.setItem('mfavorites', JSON.stringify(favorites))
-  }, [favorites])
+  const favoriteIds = useMemo(() => new Set(favorites.map((m) => m._id)), [favorites]);
 
+  const isFavorite = useCallback(
+    (movieId: string) => {
+      return favoriteIds.has(movieId);
+    },
+    [favoriteIds]
+  );
 
+  const toggleFavorite = useCallback(
+    async (movieId: string) => {
+      if (!user) return;
 
-  function toggleFavorite(movie: Movie) {
-    setFavorites(prev => {
-      const exists = prev.some(m => m.imdbID === movie.imdbID)
-      return exists ? prev.filter(m => m.imdbID !== movie.imdbID) : [...prev, movie]
-    })
-  }
-
-  const favoriteIds = useMemo(() => new Set(favorites.map(m => m.imdbID)), [favorites])
-
-  const isFavorite = useCallback((id: string) => {
-    return favoriteIds.has(id)
-  }, [favoriteIds])
+      if (favoriteIds.has(movieId)) {
+        await http.del(`/api/favorites/${movieId}`);
+      } else {
+        await http.post(`/api/favorites/${movieId}`);
+      }
+      await refreshFavorites();
+    },
+    [user, favoriteIds, refreshFavorites]
+  );
 
   return (
-    <FavoritesContext.Provider value={{ favorites, toggleFavorite, isFavorite }}>
+    <FavoritesContext.Provider value={{ favorites, refreshFavorites, toggleFavorite, isFavorite }}>
       {children}
     </FavoritesContext.Provider>
-  )
+  );
 }
 
 export function useFavorites() {
-  const ctx = useContext(FavoritesContext)
-  if (!ctx) throw new Error('useFavorites must be used within FavoritesProvider')
-  return ctx
+  const ctx = useContext(FavoritesContext);
+  if (!ctx) throw new Error("useFavorites must be used within FavoritesProvider");
+  return ctx;
 }
