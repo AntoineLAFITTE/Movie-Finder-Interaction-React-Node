@@ -1,7 +1,9 @@
-let accessToken: string | null = null;
+let accessToken: string | null = localStorage.getItem("accessToken");
 
 export function setAccessToken(token: string | null) {
   accessToken = token;
+  if (token) localStorage.setItem("accessToken", token);
+  else localStorage.removeItem("accessToken");
 }
 
 export function getAccessToken() {
@@ -10,33 +12,8 @@ export function getAccessToken() {
 
 type HttpMethod = "GET" | "POST" | "PATCH" | "DELETE";
 
-async function tryRefresh(): Promise<boolean> {
-  try {
-    const res = await fetch("/api/auth/refresh", {
-      method: "POST",
-      credentials: "include",
-    });
-    if (!res.ok) return false;
-
-    const data = await res.json();
-    if (data?.accessToken) {
-      setAccessToken(data.accessToken);
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-async function request<T>(
-  method: HttpMethod,
-  url: string,
-  body?: unknown,
-  retry = true
-): Promise<T> {
+async function request<T>(method: HttpMethod, url: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {};
-
   if (body) headers["Content-Type"] = "application/json";
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
 
@@ -47,24 +24,20 @@ async function request<T>(
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  // Access expiré => refresh 1 fois
-  if (res.status === 401 && retry) {
-    const refreshed = await tryRefresh();
-    if (refreshed) {
-      return request<T>(method, url, body, false);
-    }
+  if (res.status === 401) {
+    // token invalide => on clear
+    setAccessToken(null);
   }
 
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {
       const data = await res.json();
-      msg = data?.message || msg;
+      msg = data?.message || data?.Error || msg;
     } catch {}
     throw new Error(msg);
   }
 
-  // Certaines routes peuvent renvoyer vide
   const text = await res.text();
   return (text ? JSON.parse(text) : {}) as T;
 }

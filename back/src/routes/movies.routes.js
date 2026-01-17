@@ -1,5 +1,4 @@
 const router = require("express").Router();
-
 const requireAuth = require("../middlewares/requireAuth");
 
 const {
@@ -9,14 +8,20 @@ const {
   createMovie,
   updateMovie,
   deleteMovie,
+  importMovieFromOmdb,
 } = require("../controllers/movies.controller");
 
-// routes Guest
+// Guest routes
 router.get("/", listMovies);
 router.get("/search", searchMovies);
+
+// Connected route import des movies OMDB
+router.post("/import", requireAuth, importMovieFromOmdb);
+
+// Guest details
 router.get("/:id", getMovieById);
 
-// routes avec JWT requis
+// Connected CRUD
 router.post("/", requireAuth, createMovie);
 router.patch("/:id", requireAuth, updateMovie);
 router.delete("/:id", requireAuth, deleteMovie);

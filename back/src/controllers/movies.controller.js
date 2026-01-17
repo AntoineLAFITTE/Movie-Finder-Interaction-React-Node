@@ -122,6 +122,43 @@ async function deleteMovie(req, res) {
   res.json({ message: "Deleted" });
 }
 
+// POST /movies/import { imdbID }
+async function importMovieFromOmdb(req, res) {
+  const { imdbID } = req.body;
+
+  if (!imdbID || typeof imdbID !== "string") {
+    return res.status(400).json({ message: "imdbID is required" });
+  }
+
+  // Si déjà importé par le user, on le renvoie
+  const existing = await Movie.findOne({ imdbID, owner: req.user.userId });
+  if (existing) return res.status(200).json(existing);
+
+  const url =
+    `https://www.omdbapi.com/?apikey=${encodeURIComponent(process.env.OMDB_API_KEY)}` +
+    `&i=${encodeURIComponent(imdbID)}&plot=full`;
+
+  const r = await fetch(url);
+  const data = await r.json();
+
+  if (data?.Response === "False") {
+    return res.status(404).json({ message: data?.Error || "OMDb movie not found" });
+  }
+
+  const movie = await Movie.create({
+    imdbID: data.imdbID,
+    title: data.Title,
+    year: data.Year,
+    poster: data.Poster,
+    description: data.Plot,
+    visibility: "public",
+    owner: req.user.userId,
+  });
+
+  res.status(201).json(movie);
+}
+
+
 module.exports = {
   listMovies,
   getMovieById,
@@ -129,4 +166,5 @@ module.exports = {
   createMovie,
   updateMovie,
   deleteMovie,
+  importMovieFromOmdb,
 };

@@ -4,9 +4,17 @@ import { useFetch } from '../hooks/useFetch'
 import { useNavigate } from 'react-router-dom'
 import MovieCard from '../components/MovieCard'
 import Header from '../components/Header'
-import type { Movie } from '../context/FavoritesContext'
+import { useAuth } from '../context/AuthContext'
+import { importMovie } from '../services/movies'
 
-type SearchResult = { Search?: Movie[]; totalResults?: string; Response: string; Error?: string }
+type OmdbMovie = {
+  imdbID: string
+  Title: string
+  Year: string
+  Poster: string
+}
+
+type SearchResult = { Search?: OmdbMovie[]; totalResults?: string; Response: string; Error?: string }
 
 export default function Search() {
   const [query, setQuery] = useState('naruto')
@@ -15,6 +23,7 @@ export default function Search() {
   const url = query ? buildSearchUrl(query, page) : null
   const { data, loading, error } = useFetch<SearchResult>(url, [url])
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   useEffect(() => { setPage(1) }, [query])
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -23,18 +32,31 @@ export default function Search() {
   const total = Number(data?.totalResults || 0)
   const maxPage = total ? Math.ceil(total / 10) : 0
 
+  async function handleOpenDetails(imdbID: string) {
+    if (user) {
+      try {
+        const dbMovie = await importMovie(imdbID)
+        navigate(`/details/${dbMovie._id}`)
+        return
+      } catch {
+        // fallback: ouvrir détails OMDb si import échoue
+      }
+    }
+    navigate(`/details/${imdbID}`)
+  }
+
   return (
     <div>
       <Header title="Recherche" />
       <div className="input-row">
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') setPage(1) }}
-            placeholder="Titre de film..."
-          />
-          <button onClick={() => { setPage(1); inputRef.current?.focus() }}>Rechercher</button>
+        <input
+          ref={inputRef}
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') setPage(1) }}
+          placeholder="Titre de film..."
+        />
+        <button onClick={() => { setPage(1); inputRef.current?.focus() }}>Rechercher</button>
       </div>
 
       {loading && <p>Chargement…</p>}
@@ -46,7 +68,11 @@ export default function Search() {
 
       <div className="grid">
         {results.map(m => (
-          <MovieCard key={m.imdbID} movie={m} onOpen={id => navigate(`/details/${id}`)} />
+          <MovieCard
+            key={m.imdbID}
+            movie={m}
+            onOpen={(id) => handleOpenDetails(id)}
+          />
         ))}
       </div>
 
@@ -57,8 +83,6 @@ export default function Search() {
           <button disabled={page >= maxPage} onClick={() => setPage(p => p + 1)}>Suivant</button>
         </div>
       )}
-
-      {/* Details are shown on a dedicated page */}
     </div>
   )
 }

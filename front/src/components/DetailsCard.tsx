@@ -1,28 +1,102 @@
-import type { Movie } from '../context/FavoritesContext'
-import { useFavorites } from '../context/FavoritesContext'
+import { useState } from "react";
+import { useFavorites } from "../context/FavoritesContext";
+import { useAuth } from "../context/AuthContext";
+import { importMovie } from "../services/movies";
+
+type OmdbMovie = {
+  imdbID: string;
+  Title: string;
+  Year: string;
+  Poster: string;
+  Plot?: string;
+  Genre?: string;
+  Runtime?: string;
+  imdbRating?: string;
+};
+
+type DbMovie = {
+  _id: string;
+  imdbID?: string;
+  title: string;
+  year?: string;
+  poster?: string;
+  description?: string;
+};
 
 type Props = {
-  movie: Movie & { Plot?: string; Genre?: string; Runtime?: string; imdbRating?: string }
+  movie: OmdbMovie | DbMovie;
+};
+
+function isDbMovie(m: OmdbMovie | DbMovie): m is DbMovie {
+  return (m as DbMovie)._id !== undefined;
 }
 
 export default function DetailsCard({ movie }: Props) {
-  const { isFavorite, toggleFavorite } = useFavorites()
-  const fav = isFavorite(movie.imdbID)
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+  const [busy, setBusy] = useState(false);
+
+  const db = isDbMovie(movie);
+
+  const title = db ? movie.title : movie.Title;
+  const year = db ? movie.year ?? "" : movie.Year;
+  const poster = db ? movie.poster ?? "N/A" : movie.Poster;
+
+  const plot = db ? movie.description : movie.Plot;
+  const genre = db ? "" : movie.Genre;
+  const runtime = db ? "" : movie.Runtime;
+  const rating = db ? "" : movie.imdbRating;
+
+  const fav = db ? isFavorite(movie._id) : false;
+
+  async function handleToggleFavorite() {
+    if (db) {
+      await toggleFavorite(movie._id);
+      return;
+    }
+
+    // OMDb -> import puis toggle (si connecté)
+    if (!user) return;
+
+    setBusy(true);
+    try {
+      const dbMovie = await importMovie(movie.imdbID);
+      await toggleFavorite(dbMovie._id);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="card">
-      <img src={movie.Poster !== 'N/A' ? movie.Poster : 'https://placehold.co/300x450?text=No+Poster'} alt={movie.Title} />
+      <img
+        src={poster !== "N/A" && poster ? poster : "https://placehold.co/300x450?text=No+Poster"}
+        alt={title}
+      />
       <div className="body">
         <div className="row">
-          <strong>{movie.Title}</strong>
-          <span className="badge">{movie.Year}</span>
+          <strong>{title}</strong>
+          {year && <span className="badge">{year}</span>}
         </div>
-        {movie.Plot && <p>{movie.Plot}</p>}
-        <small>{movie.Genre} {movie.Runtime ? `- ${movie.Runtime}` : ''} {movie.imdbRating ? `- Note ${movie.imdbRating}` : ''}</small>
+
+        {plot && <p>{plot}</p>}
+
+        {!db && (
+          <small>
+            {genre ? genre : ""} {runtime ? `- ${runtime}` : ""} {rating ? `- Note ${rating}` : ""}
+          </small>
+        )}
+
         <div className="row" style={{ marginTop: 8 }}>
-          <button onClick={() => toggleFavorite(movie)}>{fav ? '★ Retirer' : '☆ Favori'}</button>
+          <button
+            onClick={handleToggleFavorite}
+            disabled={busy || (!db && !user)}
+            title={!db && !user ? "Connecte-toi pour ajouter en favoris" : ""}
+          >
+            {busy ? "..." : db ? (fav ? "★ Retirer" : "☆ Favori") : "☆ Favori"}
+          </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

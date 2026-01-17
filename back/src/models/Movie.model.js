@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const movieSchema = new mongoose.Schema(
   {
+    imdbID: { type: String, index: true }, // pour l'import OMDb
+
     title: { type: String, required: true },
     year: String,
     poster: String,
@@ -10,14 +12,14 @@ const movieSchema = new mongoose.Schema(
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true
+      required: true,
     },
 
     visibility: {
       type: String,
       enum: ["public", "link", "private"],
-      default: "public"
-    }
+      default: "public",
+    },
   },
   { timestamps: true }
 );

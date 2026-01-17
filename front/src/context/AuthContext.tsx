@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import * as auth from "../services/auth";
 import type { User } from "../services/auth";
-import { setAccessToken } from "../services/http";
+import { getAccessToken, setAccessToken } from "../services/http";
 
 type AuthContextValue = {
   user: User | null;
@@ -17,21 +17,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Au chargement: on  de tente refresh => /me
+  //Au chargement: si token => /me, sinon rien
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-        if (r.ok) {
-          const data = await r.json();
-          if (data?.accessToken) {
-            setAccessToken(data.accessToken);
-            const me = await auth.me();
-            setUser(me);
-          }
-        }
+        const token = getAccessToken();
+        if (!token) return;
+        const me = await auth.me(); // enverra Authorization via http.ts
+        setUser(me);
       } catch {
-        // ignore
+        setUser(null);
+        setAccessToken(null);
       } finally {
         setIsLoading(false);
       }
@@ -42,16 +38,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     () => ({
       user,
       isLoading,
+
       login: async (email, password) => {
-        const u = await auth.login(email, password);
+        const { user: u, accessToken } = await auth.login(email, password);
+        setAccessToken(accessToken);
         setUser(u);
       },
+
       register: async (username, email, password) => {
-        const u = await auth.register(username, email, password);
+        const { user: u, accessToken } = await auth.register(username, email, password);
+        setAccessToken(accessToken);
         setUser(u);
       },
+
       logout: async () => {
-        await auth.logout();
+        await auth.logout(); // côté back tu peux juste clear cookie si tu veux
         setUser(null);
         setAccessToken(null);
       },

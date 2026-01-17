@@ -1,5 +1,4 @@
 import { http } from "./http";
-import { setAccessToken } from "./http";
 
 export type User = {
   id?: string;
@@ -9,34 +8,40 @@ export type User = {
   createdAt?: string;
 };
 
-export async function register(username: string, email: string, password: string) {
-  const data = await http.post<{ user: User; accessToken: string }>("/api/auth/register", {
+type AuthResponse = {
+  user: User;
+  accessToken: string;
+};
+
+// Ne plus stocker le token ici
+export async function register(
+  username: string,
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  return http.post<AuthResponse>("/api/auth/register", {
     username,
     email,
     password,
   });
-  setAccessToken(data.accessToken);
-  return data.user;
 }
 
-export async function login(email: string, password: string) {
-  const data = await http.post<{ user: User; accessToken: string }>("/api/auth/login", {
+// Token a ne pas stocké ici non plsu
+export async function login(
+  email: string,
+  password: string
+): Promise<AuthResponse> {
+  return http.post<AuthResponse>("/api/auth/login", {
     email,
     password,
   });
-  setAccessToken(data.accessToken);
-  return data.user;
 }
 
 export async function logout() {
-  try {
-    await http.post<{ message: string }>("/api/auth/logout");
-  } finally {
-    setAccessToken(null);
-  }
+  return http.post<{ message: string }>("/api/auth/logout");
 }
 
-export async function me() {
+export async function me(): Promise<User> {
   const data = await http.get<{ user: User }>("/api/me");
   return data.user;
 }
