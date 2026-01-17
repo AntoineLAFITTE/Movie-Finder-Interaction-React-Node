@@ -8,7 +8,7 @@ const usersRoutes = require("./routes/users.routes");
 const meRoutes = require("./routes/me.routes");
 const favoritesRoutes = require("./routes/favorites.routes");
 const omdbRoutes = require("./routes/omdb.routes");
-
+const top3Routes = require("./routes/top3.routes");
 
 const app = express();
 
@@ -35,5 +35,7 @@ app.use("/me", meRoutes);
 app.use("/favorites", favoritesRoutes);
 app.use("/omdb", omdbRoutes);
 
+// routes Top 3 création / suppression / public
+app.use("/top3", top3Routes);
 
 module.exports = app;
