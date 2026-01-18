@@ -1,11 +1,19 @@
-import { createContext, useContext, useEffect, useMemo, useCallback, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useCallback,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import { http } from "../services/http";
 import { useAuth } from "./AuthContext";
 
-// Movie venant de ta DB (back)
+// Movie venant de la DB (back)
 export type DbMovie = {
   _id: string;
+  imdbID?: string; // pour relier OMDb -> DB
   title: string;
   year?: string;
   poster?: string;
@@ -20,9 +28,12 @@ type FavoritesContextType = {
   refreshFavorites: () => Promise<void>;
   toggleFavorite: (movieId: string) => Promise<void>;
   isFavorite: (movieId: string) => boolean;
+  isFavoriteImdb: (imdbID: string) => boolean;
 };
 
-const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+const FavoritesContext = createContext<FavoritesContextType | undefined>(
+  undefined
+);
 
 export function FavoritesProvider({ children }: { children: ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -43,13 +54,31 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     refreshFavorites();
   }, [isLoading, user, refreshFavorites]);
 
-  const favoriteIds = useMemo(() => new Set(favorites.map((m) => m._id)), [favorites]);
+  const favoriteIds = useMemo(
+    () => new Set(favorites.map((m) => m._id)),
+    [favorites]
+  );
+
+  const favoriteImdbIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of favorites) {
+      if (m.imdbID) s.add(m.imdbID);
+    }
+    return s;
+  }, [favorites]);
 
   const isFavorite = useCallback(
     (movieId: string) => {
       return favoriteIds.has(movieId);
     },
     [favoriteIds]
+  );
+
+  const isFavoriteImdb = useCallback(
+    (imdbID: string) => {
+      return favoriteImdbIds.has(imdbID);
+    },
+    [favoriteImdbIds]
   );
 
   const toggleFavorite = useCallback(
@@ -61,13 +90,23 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
       } else {
         await http.post(`/api/favorites/${movieId}`);
       }
+
+      // refresh pour voir l’état (★/☆)
       await refreshFavorites();
     },
     [user, favoriteIds, refreshFavorites]
   );
 
   return (
-    <FavoritesContext.Provider value={{ favorites, refreshFavorites, toggleFavorite, isFavorite }}>
+    <FavoritesContext.Provider
+      value={{
+        favorites,
+        refreshFavorites,
+        toggleFavorite,
+        isFavorite,
+        isFavoriteImdb,
+      }}
+    >
       {children}
     </FavoritesContext.Provider>
   );
