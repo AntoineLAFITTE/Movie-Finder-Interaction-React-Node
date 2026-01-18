@@ -51,7 +51,6 @@ export default function Top3Details() {
                       <strong>{m.Title}</strong>
                       {m.Year && <span className="badge">{m.Year}</span>}
                     </div>
-                    <small>{m.imdbID}</small>
                   </div>
                 </div>
               ))}

@@ -1,7 +1,9 @@
 const Movie = require("../models/Movie.model");
 const mongoose = require("mongoose");
 
+// =======================
 // Pour les GUESTS
+// =======================
 
 // GET /movies?page=1&limit=12
 async function listMovies(req, res) {
@@ -29,9 +31,7 @@ async function getMovieById(req, res) {
     return res.status(400).json({ message: "Invalid id" });
   }
 
-  const movie = await Movie.findOne({ _id: id, visibility: "public" })
-    .populate("owner", "username");
-
+  const movie = await Movie.findOne({ _id: id, visibility: "public" }).populate("owner", "username");
   if (!movie) return res.status(404).json({ message: "Movie not found" });
 
   res.json(movie);
@@ -55,9 +55,9 @@ async function searchMovies(req, res) {
   res.json({ items });
 }
 
-
+// =======================
 // Pour les USERS authentifiés
-
+// =======================
 
 // POST /movies
 async function createMovie(req, res) {
@@ -74,6 +74,7 @@ async function createMovie(req, res) {
     description,
     visibility: visibility || "public",
     owner: req.user.userId,
+    source: "manual", // ✅ movie créé par l’utilisateur
   });
 
   res.status(201).json(movie);
@@ -151,13 +152,16 @@ async function importMovieFromOmdb(req, res) {
     year: data.Year,
     poster: data.Poster,
     description: data.Plot,
-    visibility: "public",
+
+    // IMPORTANT : import OMDb n'est pas un movie public du user
+    visibility: "private",
+    source: "omdb",
+
     owner: req.user.userId,
   });
 
   res.status(201).json(movie);
 }
-
 
 module.exports = {
   listMovies,
