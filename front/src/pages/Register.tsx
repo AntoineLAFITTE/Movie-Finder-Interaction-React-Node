@@ -15,6 +15,7 @@ export default function Register() {
       <h2>Register</h2>
 
       <form
+        autoComplete="off"
         onSubmit={async (e) => {
           e.preventDefault();
           setError(null);
@@ -27,24 +28,34 @@ export default function Register() {
         }}
       >
         <input
+          name="username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Username"
+          autoComplete="username"
           style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
+
         <input
+          name="email"
+          type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="Email"
+          autoComplete="email"
           style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
+
         <input
+          name="password"
+          type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
-          type="password"
+          autoComplete="new-password"
           style={{ width: "100%", padding: 10, marginBottom: 10 }}
         />
+
         <button type="submit">Créer le compte</button>
       </form>
 

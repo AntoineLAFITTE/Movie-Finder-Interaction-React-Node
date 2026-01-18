@@ -22,6 +22,7 @@ body {
 /* Dark mode */
 .dark body,
 .dark {
+  min-height: 100vh;
   background-color: var(--color-bg-dark);
   color: var(--color-text-dark);
 }
@@ -146,9 +147,21 @@ button:hover {
 
 .row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
   margin-bottom: 0.5rem;
+}
+
+.row > strong {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.card .row button {
+  padding: 0.45rem 0.7rem;
+  flex: 1 1 auto;
+  min-width: 90px;
 }
 
 .badge {
