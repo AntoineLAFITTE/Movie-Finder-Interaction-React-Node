@@ -19,7 +19,12 @@ async function getPublicProfile(req, res) {
   const user = await User.findOne({ username }).select("_id username createdAt");
   if (!user) return res.status(404).json({ message: "User not found" });
 
-  const movies = await Movie.find({ owner: user._id, visibility: "public" })
+  // On n’affiche que les movies "manual" publics et pas les imports OMDb
+  const movies = await Movie.find({
+    owner: user._id,
+    visibility: "public",
+    source: "manual",
+  })
     .sort({ createdAt: -1 })
     .select("title year poster createdAt");
 

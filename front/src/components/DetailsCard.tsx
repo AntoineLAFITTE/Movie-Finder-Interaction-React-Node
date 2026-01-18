@@ -42,20 +42,23 @@ export default function DetailsCard({ movie }: Props) {
   const year = db ? movie.year ?? "" : movie.Year;
   const poster = db ? movie.poster ?? "N/A" : movie.Poster;
 
-  const plot = db ? movie.description : movie.Plot;
-  const genre = db ? "" : movie.Genre;
-  const runtime = db ? "" : movie.Runtime;
-  const rating = db ? "" : movie.imdbRating;
-
   const fav = db ? isFavorite(movie._id) : false;
 
   async function handleToggleFavorite() {
+    if (busy) return;
+
+    // DB => toggle direct
     if (db) {
-      await toggleFavorite(movie._id);
+      setBusy(true);
+      try {
+        await toggleFavorite(movie._id);
+      } finally {
+        setBusy(false);
+      }
       return;
     }
 
-    // OMDb -> import puis toggle (si connecté)
+    // OMDb => import puis toggle (si connecté)
     if (!user) return;
 
     setBusy(true);
@@ -78,14 +81,6 @@ export default function DetailsCard({ movie }: Props) {
           <strong>{title}</strong>
           {year && <span className="badge">{year}</span>}
         </div>
-
-        {plot && <p>{plot}</p>}
-
-        {!db && (
-          <small>
-            {genre ? genre : ""} {runtime ? `- ${runtime}` : ""} {rating ? `- Note ${rating}` : ""}
-          </small>
-        )}
 
         <div className="row" style={{ marginTop: 8 }}>
           <button

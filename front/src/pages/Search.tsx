@@ -4,8 +4,6 @@ import { useFetch } from '../hooks/useFetch'
 import { useNavigate } from 'react-router-dom'
 import MovieCard from '../components/MovieCard'
 import Header from '../components/Header'
-import { useAuth } from '../context/AuthContext'
-import { importMovie } from '../services/movies'
 
 type OmdbMovie = {
   imdbID: string
@@ -20,10 +18,10 @@ export default function Search() {
   const [query, setQuery] = useState('naruto')
   const [page, setPage] = useState(1)
   const inputRef = useRef<HTMLInputElement | null>(null)
+
   const url = query ? buildSearchUrl(query, page) : null
   const { data, loading, error } = useFetch<SearchResult>(url, [url])
   const navigate = useNavigate()
-  const { user } = useAuth()
 
   useEffect(() => { setPage(1) }, [query])
   useEffect(() => { inputRef.current?.focus() }, [])
@@ -32,16 +30,8 @@ export default function Search() {
   const total = Number(data?.totalResults || 0)
   const maxPage = total ? Math.ceil(total / 10) : 0
 
-  async function handleOpenDetails(imdbID: string) {
-    if (user) {
-      try {
-        const dbMovie = await importMovie(imdbID)
-        navigate(`/details/${dbMovie._id}`)
-        return
-      } catch {
-        // fallback: ouvrir détails OMDb si import échoue
-      }
-    }
+  function handleOpenDetails(imdbID: string) {
+    // Toujours ouvrir la fiche OMDb (même connecté)
     navigate(`/details/${imdbID}`)
   }
 
